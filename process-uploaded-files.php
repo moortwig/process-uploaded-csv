@@ -8,5 +8,14 @@ include_once('App/ProcessUploaded.php');
 /** Initiate the task */
 $process = new \App\ProcessUploaded();
 
+$locked = false; // FIXME  dummy
 
-// echo $process->test_crontab();
+if (!$locked) {
+    $process->handle();
+}
+
+// TODO
+//  Process files (done in separate class)
+//  When processed, move file to Processed folder (create if not existing)
+//  If file failed, move file to Failed
+

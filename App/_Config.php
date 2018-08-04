@@ -14,7 +14,11 @@ class _Config
     // PATH PARAMETERS
     public $appName = 'App';
     public $basePath;
-    public $storageFolder = 'storage/';
+
+    // APP FILESYSTEM
+    public $uploadedFolder = 'path-to/uploaded/';
+    public $processedFolder = 'path-to/processed/';
+    public $failedFolder = 'path-to/failed/';
 
 
     function __construct()
