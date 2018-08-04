@@ -36,9 +36,10 @@ class ProcessUploaded
             $content = $this->getData($handle); // will be empty array if content is wrongly formatted
 
             if (count($content) > 0) {
+                foreach ($content as $row) {
+                    $validated = $validator->validate($row, $rules); // true or false
+                }
 
-
-                $validated = $validator->validate($content, $rules); // true or false
 
                 //      if not passing validation
                 //          move to failed
