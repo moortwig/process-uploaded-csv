@@ -28,29 +28,31 @@ class ProcessUploaded
         $validator = new Validator();
 
         foreach ($files as $file) {
-//            var_dump($file); // eg "2018-01-02-665327.csv"
             $path = $this->getPath('uploaded');
             $handle = $this->open($path . $file, 'r');
 
-            $content[$file] = $this->getContent($handle); // will be empty array if content is wrongly formatted
+            $content = [$file => $this->getContent($handle)]; // will be empty array if content is wrongly formatted
 
-            if (count($content) > 0) {
-                $errors = $validator->validate($content, $rules); // if there are NO errors in a file, this will be an empty array
-
+            if (count($content[$file]) > 0) {
+                $errors = $validator->validate($content,
+                    $rules); // if there are NO errors in a file, this will be an empty array
                 if (count($errors) > 0) {
-                    // move to failed
-                    // log errors (which already contains the error messages)
-
+                    // TODO move to failed
+                    Logger::errors($errors);
                 } else {
-                    // store in db
-                    // log info, succeeded to process file
+                    $this->processFile($content);
+                    Logger::log(LOG_INFO, 'File: ' . $file . ' has passed validation successfully.');
                 }
+            } else {
+                Logger::log(LOG_ERR, 'File: ' . $file . ' | Validation skipped due to wrong format.');
             }
         }
-
     }
 
-    private function processFile($file) {
+    private function processFile($file)
+    {
+        // TODO store in db
+        // TODO move to processed
 
     }
 
