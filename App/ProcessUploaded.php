@@ -4,10 +4,19 @@ namespace App;
 
 use App\Config;
 use App\Database;
+use App\File;
 use ErrorException;
 
 class ProcessUploaded
 {
+    protected $fileHandler;
+
+    public function __construct(File $fileHandler)
+    {
+        $this->fileHandler = $fileHandler;
+    }
+
+
     public function initiate()
     {
         return 'initiate' . PHP_EOL;
@@ -23,36 +32,37 @@ class ProcessUploaded
             'eventAction'       => ['string', 'min=1', 'max=20', 'required'],
             'callRef'           => ['integer', 'required'],
             'eventValue'        => ['decimal'],
-            'eventCurrencyCode' => ['string', 'length=3', 'required-if:eventValue'],
+            'eventCurrencyCode' => ['string', 'length=3', 'required_if=eventValue'],
         ];
         $validator = new Validator();
 
         foreach ($files as $file) {
             $path = $this->getPath('uploaded');
-            $handle = $this->open($path . $file, 'r');
+            $handle = $this->fileHandler->open($path . $file, 'r');
 
-            $content = [$file => $this->getContent($handle)]; // will be empty array if content is wrongly formatted
+            $content = [
+                $file => $this->getContent($handle, $file),
+            ]; // will be empty array if content is wrongly formatted
 
             if (count($content[$file]) > 0) {
                 $errors = $validator->validate($content,
                     $rules); // if there are NO errors in a file, this will be an empty array
                 if (count($errors) > 0) {
-                    // TODO move to failed
                     Logger::errors($errors);
+                    $this->moveFileTo('uploaded', 'failed', $file);
                 } else {
-                    $this->processFile($content[$file]);
                     Logger::log(LOG_INFO, 'File: ' . $file . ' has passed validation successfully.');
+                    $this->processFile($content);
                 }
-            } else {
-                Logger::log(LOG_ERR, 'File: ' . $file . ' | Validation skipped due to wrong format.');
             }
         }
     }
 
     private function processFile($file)
     {
+        $fileName = key($file);
         $db = new Database();
-        foreach ($file as $row) {
+        foreach ($file[$fileName] as $row) {
             try {
                 $query = $db
                     ->connect()
@@ -62,8 +72,7 @@ class ProcessUploaded
                 dd($e->getMessage());
             }
         }
-        // TODO move to processed
-
+        $this->moveFileTo('uploaded', 'processed', $fileName);
 
     }
 
@@ -74,9 +83,10 @@ class ProcessUploaded
      * NOTE: I'm making the assumption tabs are not used within otherwise valid data, eg "
      *
      * @param $handle
+     * @param $fileName
      * @return array
      */
-    private function getContent($handle)
+    private function getContent($handle, $fileName)
     {
         // TODO add validation to check that every file has Unix line endings
         $collection = [];
@@ -99,18 +109,47 @@ class ProcessUploaded
 
                 }
             }
-            fclose($handle);
+            $this->fileHandler->close($handle);
         }
 
         if (count($failed) > 0) {
-            // TODO send file to Failed
-            // TODO log this
+            $this->moveFileTo('uploaded', 'failed', $fileName);
+            Logger::log(LOG_ERR, 'File: ' . $fileName . ' | Not a CSV file.');
 
             return []; // if a single row failed, we move the file to Failed and should therefore return an empty array
         }
 
         return $collection;
     }
+
+
+    /** Lock file */
+    protected function lockProcess()
+    {
+        // TODO
+    }
+
+
+    /** FILE METHODS */
+//    protected function writeToFile($pid, $fileName)
+//    {
+//        $path = $this->getPath();
+//        $handle = $this->open($path . $fileName, 'a');
+//
+//        if (is_resource($handle)) {
+//            fwrite($handle, getmypid() . PHP_EOL);
+//            $this->close($handle);
+//
+//            Logger::log(LOG_INFO, 'File has been processed');
+//
+//            return true;
+//        } else {
+//            Logger::log(LOG_ERR, 'Failed to open/create file');
+//
+//            return false;
+//        }
+//    }
+
 
     /**
      * Scan for files and filter results from anything besides .csv files.
@@ -141,64 +180,8 @@ class ProcessUploaded
         return $this->scanFolder($path);
     }
 
-    /*public function db_connect()
-    {
-        $db = new Database();
-        try {
-            $query = $db->connect()->query("SELECT * FROM uploads WHERE id = 1");
-        } catch (ErrorException  $e) {
-            echo $e->getMessage();
-        }
-
-        return $query;
-    }*/
-
     /**
-     * This is to test crontab works
-     */
-    public function test_crontab()
-    {
-        $pid = getmypid();
-
-        syslog(LOG_INFO, 'process initiated');
-
-        return $this->writeToFile($pid, 'crontab_test.log');
-    }
-
-    /** Lock file */
-    protected function lockProcess()
-    {
-        // TODO
-    }
-
-
-    /** FILE METHODS */
-
-    /**
-     * @param $pid
-     * @param $fileName
-     * @return mixed
-     */
-    protected function writeToFile($pid, $fileName)
-    {
-        $path = $this->getPath();
-        $handle = $this->open($path . $fileName, 'a');
-
-        if (is_resource($handle)) {
-            fwrite($handle, getmypid() . PHP_EOL);
-            $this->close($handle);
-
-            Logger::log(LOG_INFO, 'File has been processed');
-
-            return true;
-        } else {
-            Logger::log(LOG_ERR, 'Failed to open/create file');
-
-            return false;
-        }
-    }
-
-    /**
+     * @param $folder
      * @return string
      */
     protected function getPath($folder)
@@ -213,22 +196,13 @@ class ProcessUploaded
         return $path;
     }
 
-    /**
-     * @param $fullPath
-     * @param $mode
-     * @return bool|resource
-     */
-    protected function open($fullPath, $mode)
+    protected function moveFileTo($currentFolder, $newFolder, $fileName)
     {
-        return fopen($fullPath, $mode);
-    }
+        try {
+            rename($this->getPath($currentFolder) . $fileName, $this->getPath($newFolder) . $fileName);
+        } catch (ErrorException $e) {
+            dd($e->getMessage());
+        }
 
-    /**
-     *
-     * @param $handle
-     */
-    protected function close($handle)
-    {
-        fclose($handle);
     }
 }

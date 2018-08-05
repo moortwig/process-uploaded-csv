@@ -20,9 +20,11 @@ try {
 }
 
 /** Initiate the task */
-$process = new \App\ProcessUploaded();
+$process = new \App\ProcessUploaded(new \App\File());
 
 $locked = false; // FIXME  dummy
+
+
 
 if (!$locked) {
     /** Run the task */

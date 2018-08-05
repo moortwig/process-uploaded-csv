@@ -23,10 +23,16 @@ class Validator
     }
 
 
+    /**
+     * @param $row
+     * @param $rules
+     * @param $fileName
+     * @param $line
+     * @return array|null
+     */
     private function validateRow($row, $rules, $fileName, $line)
     {
         $errors = [];
-        // FIXME ensure rules are all lower case, and contain no whitespace except for the format rule ... ^^
 
         foreach ($row as $key => $item) {
             $rule = $rules[$key];
@@ -49,21 +55,20 @@ class Validator
                     $errors[] = $prefix . 'Missing value';
                 }
             }
-            // NEW, UNTESTED, VALIDATIONS BELOW THIS COMMENT!!! TODO test these :)
             if (in_array('string', $rule)) {
                 $validated = $this->validateString($item);
                 if (!$validated) {
                     $errors[] = $prefix . 'Not a string.';
                 }
             }
-            if (in_array('min=1', $rule)) { // FIXME hardcoded rule
+            if (in_array('min=1', $rule)) { // FIXME hardcoded parameter
                 $validated = $this->validateMinValue($item, 'min=1');
                 if (!$validated) {
                     $errors[] = $prefix . 'String too short.';
                 }
             }
-            if (in_array('max=1', $rule)) { // FIXME hardcoded rule
-                $validated = $this->validateMaxValue($item, 'max=1');
+            if (in_array('max=20', $rule)) { // FIXME hardcoded parameter
+                $validated = $this->validateMaxValue($item, 'max=20');
                 if (!$validated) {
                     $errors[] = $prefix . 'String too long.';
                 }
@@ -80,16 +85,16 @@ class Validator
                     $errors[] = $prefix . 'Not a decimal.';
                 }
             }
-            if (in_array('length=3', $rule)) { // FIXME hardcoded rule
+            if (in_array('length=3', $rule)) { // FIXME hardcoded parameter
                 $validated = $this->validateLength($item, 'length=3');
                 if (!$validated) {
                     $errors[] = $prefix . 'String not of correct length.';
                 }
             }
-            if (in_array('required_if=eventValue', $rule)) { // FIXME hardcoded rule
+            if (in_array('required_if=eventValue', $rule)) { // FIXME hardcoded parameter
                 $validated = $this->validateRequiredIf($item, 'required_if=eventValue', $row);
                 if (!$validated) {
-                    $errors[] = $prefix . ' Missing related value.'; // FIXME better message string?
+                    $errors[] = $prefix . ' Missing related value.';
                 }
             }
         }
@@ -118,18 +123,18 @@ class Validator
      */
     private function validateInteger($item)
     {
-        return is_int($item);
+        return preg_match('/^[\d]*$/', $item);
     }
 
     /**
-     * Checks if item is a decimal.
+     * Checks if item is a decimal. Does allow integers as well, for such cases (eg 0) ...
      *
      * @param $item
      * @return bool
      */
     private function validateDecimal($item)
     {
-        return is_float($item);
+        return preg_match('/^-?\d*(\.\d+)?$/', $item);
     }
 
     /**
@@ -168,11 +173,11 @@ class Validator
     {
         $max = explode('=', $rule);
 
-        return mb_strlen($item) >= $max[1]; // FIXME array_last like function
+        return mb_strlen($item) < $max[1]; // FIXME array_last like function
     }
 
     /**
-     * Checks if item is of exact length
+     * Checks if item is of exact length, unless item is an empty string ...
      *
      * @param $item
      * @param $rule
@@ -182,11 +187,11 @@ class Validator
     {
         $length = explode('=', $rule);
 
-        return mb_strlen($item) === $length[1]; // FIXME array_last like function
+        return mb_strlen($item) > 0 ? mb_strlen($item) === (int)$length[1] : true; // FIXME array_last like function
     }
 
     /**
-     * Checks if item
+     * Checks that otherItem isn't an empty string and that it's not 0, before checking if item has content.
      *
      * @param $item
      * @param $rule
@@ -199,17 +204,7 @@ class Validator
         $key = $required[1]; // FIXME array_last like function
         $otherItem = $row[$key];
 
-        // How does !== 0 work on decimals? If it's 0.00, for instance ...
-        // otherItem validations can be false, and item can be true - which is fine. Should be allowed
-        // However, if otherItem val is true, and item is false - error should be returned
-        if (isset($otherItem) && is_float($otherItem) && $otherItem !== 0) { // TODO definitely test this one ...
-            // true
-            return isset($item);
-        } else {
-            return true; // otherItem is false, so in this case item doesn't matter.
-        }
-
-//        return (isset($otherItem) && is_float($otherItem) && $otherItem !== 0) && isset($item);
+        return (mb_strlen($otherItem) > 0 && $otherItem != 0) ? (mb_strlen($item) > 0) : true;
     }
 
     /**
