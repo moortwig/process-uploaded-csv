@@ -4,7 +4,6 @@ namespace App;
 
 use App\Config;
 use App\Database;
-
 use ErrorException;
 
 class ProcessUploaded
@@ -33,7 +32,7 @@ class ProcessUploaded
             $path = $this->getPath('uploaded');
             $handle = $this->open($path . $file, 'r');
 
-            $content = $this->getData($handle); // will be empty array if content is wrongly formatted
+            $content = $this->getContent($handle); // will be empty array if content is wrongly formatted
 
             if (count($content) > 0) {
                 foreach ($content as $row) {
@@ -61,7 +60,7 @@ class ProcessUploaded
      * @param $handle
      * @return array
      */
-    private function getData($handle)
+    private function getContent($handle)
     {
         // TODO add validation to check that every file has Unix line endings
         $collection = [];
@@ -71,13 +70,15 @@ class ProcessUploaded
         if ($handle) {
             while (($row = fgetcsv($handle, 1000, ",")) !== false) {
 
-                if (count($header) === 0 ) {
+                if (count($header) === 0) {
                     $header = $row;
                 } else {
-                    if(count($row) > 2) { // There are three types of columns required
+                    if (count($row) > 2) { // There are three types of columns required
                         $collection[] = array_combine($header, $row);
-                    } else if (!is_null($row[0])) { // Exclude blank rows from failed parses
-                        $failed[] = $row;
+                    } else {
+                        if (!is_null($row[0])) { // Exclude blank rows from failed parses
+                            $failed[] = $row;
+                        }
                     }
 
                 }
@@ -192,6 +193,7 @@ class ProcessUploaded
         if (!file_exists($path)) {
             mkdir($path);
         }
+
         return $path;
     }
 
