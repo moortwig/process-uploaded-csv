@@ -16,9 +16,10 @@ class _Config
     public $basePath;
 
     // APP FILESYSTEM
-    public $uploadedFolder = 'path-to/uploaded/';
-    public $processedFolder = 'path-to/processed/';
-    public $failedFolder = 'path-to/failed/';
+    public $lockFolder = 'tmp/';
+    public $uploadedFolder = 'files/uploaded/';
+    public $processedFolder = 'files/processed/';
+    public $failedFolder = 'files/failed/';
 
 
     function __construct()

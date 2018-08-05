@@ -82,6 +82,7 @@ class Database
                 ) 
                 ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;');
 
+            Logger::log(LOG_INFO, 'Database created');
         } catch (PDOException $e) {
             dd($e->getMessage());
         }

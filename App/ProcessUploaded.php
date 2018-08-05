@@ -15,12 +15,6 @@ class ProcessUploaded
         $this->fileHandler = $fileHandler;
     }
 
-
-    public function initiate()
-    {
-        return 'initiate' . PHP_EOL;
-    }
-
     public function handle()
     {
         $files = $this->fileHandler->getFiles(); // will always be an array. No files found === empty array
@@ -55,6 +49,8 @@ class ProcessUploaded
                 }
             }
         }
+
+        return true;
     }
 
     private function processFile($file)
@@ -103,7 +99,6 @@ class ProcessUploaded
                             $failed[] = $row;
                         }
                     }
-
                 }
             }
             $this->fileHandler->close($handle);
@@ -120,9 +115,24 @@ class ProcessUploaded
     }
 
 
-    /** Lock file */
-    protected function lockProcess()
+    /**
+     * @return bool
+     */
+    public function lockProcess()
     {
-        // TODO
+        return $this->fileHandler->createFile(getmypid(), 'lock.txt');
+    }
+
+    /**
+     * @return bool
+     */
+    public function processIsLocked()
+    {
+        return $this->fileHandler->fileExists('lock', 'lock.txt');
+    }
+
+    public function done()
+    {
+        $this->fileHandler->removeFile('lock', 'lock.txt');
     }
 }
