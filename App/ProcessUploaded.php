@@ -5,7 +5,6 @@ namespace App;
 use App\Config;
 use App\Database;
 use App\File;
-use ErrorException;
 
 class ProcessUploaded
 {
@@ -24,7 +23,7 @@ class ProcessUploaded
 
     public function handle()
     {
-        $files = $this->getFiles(); // will always be an array. No files found === empty array
+        $files = $this->fileHandler->getFiles(); // will always be an array. No files found === empty array
 
         // Validate the contents
         $rules = [
@@ -37,7 +36,7 @@ class ProcessUploaded
         $validator = new Validator();
 
         foreach ($files as $file) {
-            $path = $this->getPath('uploaded');
+            $path = $this->fileHandler->getPath('uploaded');
             $handle = $this->fileHandler->open($path . $file, 'r');
 
             $content = [
@@ -49,7 +48,7 @@ class ProcessUploaded
                     $rules); // if there are NO errors in a file, this will be an empty array
                 if (count($errors) > 0) {
                     Logger::errors($errors);
-                    $this->moveFileTo('uploaded', 'failed', $file);
+                    $this->fileHandler->moveFileTo('uploaded', 'failed', $file);
                 } else {
                     Logger::log(LOG_INFO, 'File: ' . $file . ' has passed validation successfully.');
                     $this->processFile($content);
@@ -72,8 +71,7 @@ class ProcessUploaded
                 dd($e->getMessage());
             }
         }
-        $this->moveFileTo('uploaded', 'processed', $fileName);
-
+        $this->fileHandler->moveFileTo('uploaded', 'processed', $fileName);
     }
 
 
@@ -88,7 +86,6 @@ class ProcessUploaded
      */
     private function getContent($handle, $fileName)
     {
-        // TODO add validation to check that every file has Unix line endings
         $collection = [];
         $header = [];
         $failed = [];
@@ -113,7 +110,7 @@ class ProcessUploaded
         }
 
         if (count($failed) > 0) {
-            $this->moveFileTo('uploaded', 'failed', $fileName);
+            $this->fileHandler->moveFileTo('uploaded', 'failed', $fileName);
             Logger::log(LOG_ERR, 'File: ' . $fileName . ' | Not a CSV file.');
 
             return []; // if a single row failed, we move the file to Failed and should therefore return an empty array
@@ -127,82 +124,5 @@ class ProcessUploaded
     protected function lockProcess()
     {
         // TODO
-    }
-
-
-    /** FILE METHODS */
-//    protected function writeToFile($pid, $fileName)
-//    {
-//        $path = $this->getPath();
-//        $handle = $this->open($path . $fileName, 'a');
-//
-//        if (is_resource($handle)) {
-//            fwrite($handle, getmypid() . PHP_EOL);
-//            $this->close($handle);
-//
-//            Logger::log(LOG_INFO, 'File has been processed');
-//
-//            return true;
-//        } else {
-//            Logger::log(LOG_ERR, 'Failed to open/create file');
-//
-//            return false;
-//        }
-//    }
-
-
-    /**
-     * Scan for files and filter results from anything besides .csv files.
-     *
-     * @param $path
-     * @return array
-     */
-    private function scanFolder($path)
-    {
-        $files = scandir($path);
-
-        return array_filter($files, function ($item) {
-            $fileInfo = new \SplFileInfo($item);
-
-            if ($fileInfo->getExtension() === 'csv') {
-                return $item;
-            }
-        });
-    }
-
-    /**
-     * @return array|bool
-     */
-    private function getFiles()
-    {
-        $path = $this->getPath('uploaded');
-
-        return $this->scanFolder($path);
-    }
-
-    /**
-     * @param $folder
-     * @return string
-     */
-    protected function getPath($folder)
-    {
-        $config = new Config();
-        $path = $config->basePath . $config->{$folder . 'Folder'};
-
-        if (!file_exists($path)) {
-            mkdir($path);
-        }
-
-        return $path;
-    }
-
-    protected function moveFileTo($currentFolder, $newFolder, $fileName)
-    {
-        try {
-            rename($this->getPath($currentFolder) . $fileName, $this->getPath($newFolder) . $fileName);
-        } catch (ErrorException $e) {
-            dd($e->getMessage());
-        }
-
     }
 }
