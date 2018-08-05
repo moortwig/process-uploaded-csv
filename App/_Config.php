@@ -14,7 +14,12 @@ class _Config
     // PATH PARAMETERS
     public $appName = 'App';
     public $basePath;
-    public $storageFolder = 'storage/';
+
+    // APP FILESYSTEM
+    public $lockFolder = 'tmp/';
+    public $uploadedFolder = 'files/uploaded/';
+    public $processedFolder = 'files/processed/';
+    public $failedFolder = 'files/failed/';
 
 
     function __construct()
@@ -22,7 +27,8 @@ class _Config
         $this->basePath = $this->getBasePath();
     }
 
-    private function getBasePath() {
+    private function getBasePath()
+    {
         $length = strlen($this->appName);
         $basePath = substr(__DIR__, 0, -$length);
 
