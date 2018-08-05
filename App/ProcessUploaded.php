@@ -64,6 +64,7 @@ class ProcessUploaded
                     ->prepare('INSERT into uploads (event_datetime, event_action, call_ref, event_value, event_currency_code) VALUES (?,?,?,?,?)');
                 $query->execute(array_values($row)); // array_values, because it doesn't like "keyed" arrays
             } catch (\PDOException $e) {
+                Logger::log(LOG_ERR, 'File: ' . $fileName . ' | ' . $e->getMessage());
                 dd($e->getMessage());
             }
         }
