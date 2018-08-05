@@ -32,22 +32,25 @@ class ProcessUploaded
             $path = $this->getPath('uploaded');
             $handle = $this->open($path . $file, 'r');
 
-            $content = $this->getContent($handle); // will be empty array if content is wrongly formatted
+            $content[$file] = $this->getContent($handle); // will be empty array if content is wrongly formatted
 
             if (count($content) > 0) {
-                foreach ($content as $row) {
-                    $validated = $validator->validate($row, $rules); // true or false
+                $errors = $validator->validate($content, $rules); // if there are NO errors in a file, this will be an empty array
+
+                if (count($errors) > 0) {
+                    // move to failed
+                    // log errors (which already contains the error messages)
+
+                } else {
+                    // store in db
+                    // log info, succeeded to process file
                 }
-
-
-                //      if not passing validation
-                //          move to failed
-                //          log error, validation failed (bonus: log why it failed)
-                //      if passing validation
-                //          handle the content (store in db)
-                //          log info, succeeded to process file
             }
         }
+
+    }
+
+    private function processFile($file) {
 
     }
 
