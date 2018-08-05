@@ -26,7 +26,8 @@ class _Config
         $this->basePath = $this->getBasePath();
     }
 
-    private function getBasePath() {
+    private function getBasePath()
+    {
         $length = strlen($this->appName);
         $basePath = substr(__DIR__, 0, -$length);
 

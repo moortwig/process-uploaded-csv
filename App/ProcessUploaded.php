@@ -40,7 +40,7 @@ class ProcessUploaded
                     // TODO move to failed
                     Logger::errors($errors);
                 } else {
-                    $this->processFile($content);
+                    $this->processFile($content[$file]);
                     Logger::log(LOG_INFO, 'File: ' . $file . ' has passed validation successfully.');
                 }
             } else {
@@ -51,8 +51,19 @@ class ProcessUploaded
 
     private function processFile($file)
     {
-        // TODO store in db
+        $db = new Database();
+        foreach ($file as $row) {
+            try {
+                $query = $db
+                    ->connect()
+                    ->prepare('INSERT into uploads (event_datetime, event_action, call_ref, event_value, event_currency_code) VALUES (?,?,?,?,?)');
+                $query->execute(array_values($row)); // array_values, because it doesn't like "keyed" arrays
+            } catch (\PDOException $e) {
+                dd($e->getMessage());
+            }
+        }
         // TODO move to processed
+
 
     }
 
