@@ -46,4 +46,4 @@ My hope is that this section will shed some light on why I solved things the way
  
  - **Config:** Ideally, it shouldn't contain any methods.
   
-
+ - **Error handling:** Where applicable, I've used try/catch, elsewhere null/false checks.
